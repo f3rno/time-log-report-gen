@@ -1,0 +1,17 @@
+{
+  "name": "time-log-report-gen",
+  "version": "0.0.1",
+  "description": "Personal time log report generator",
+  "engines": {
+    "node": ">=7"
+  },
+  "main": "index.js",
+  "author": "Cris Mihalache <me@f3rno.com>",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^4.1.1",
+    "dotenv": "^8.0.0",
+    "lodash": "^4.17.11"
+  }
+}
