@@ -1,8 +1,10 @@
 process.env.DEBUG = '*'
+process.env.DEBUG_COLORS = 0
+process.env.DEBUG_HIDE_DATE = 1
 
 require('dotenv').config()
 
-const debug = require('debug')('tl-report-gen')
+const debug = require('debug')('')
 const fs = require('fs')
 const _last = require('lodash/last')
 const _isEmpty = require('lodash/isEmpty')
@@ -15,6 +17,8 @@ const _max = require('lodash/max')
 
 const { HOURLY } = process.env
 const inputFn = _last(process.argv)
+
+debug.log = console.log.bind(console) // log to stdout
 
 if (!_isString(inputFn) || _isEmpty(inputFn)) {
   debug('JSON data filename required')
@@ -70,6 +74,7 @@ data.forEach((entry, i) => {
   entry.end = +(new Date(entry.end))
   entry.lenHours = (entry.end - entry.start) / (1000 * 60 * 60)
   entry.coeff = getCoeff(entry)
+  entry.cost = entry.lenHours * entry.coeff.c * HOURLY
 
   const { takePrevNote, coeffStr } = entry.coeff
 
@@ -89,28 +94,23 @@ const avgCoeff = _sum(data.map(e => e.coeff.c)) / data.length
 const hours = _sum(data.map(({ lenHours }) => lenHours))
 const reportStart = _min(data.map(({ start }) => start))
 const reportEnd = _max(data.map(({ end }) => end))
+const startString = new Date(reportStart).toDateString()
+const endString = new Date(reportEnd).toDateString()
 
-debug(
-  '* Report for %s -> %s (%d entries) *',
-  new Date(reportStart).toLocaleString(),
-  new Date(reportEnd).toLocaleString(),
-  data.length
-)
+debug('Report for %s -> %s (%d entries)', startString, endString, data.length)
 debug('')
-
-debug('Average coeff: %f\%', avgCoeff * 100)
-debug('Lowest coeff: %f\%', _min(data.map(({ coeff }) => coeff.c)) * 100)
-debug('Highest coeff: %f\%', _max(data.map(({ coeff }) => coeff.c)) * 100)
+debug('Average coeff: %f\%', (avgCoeff * 100).toFixed(2))
+debug('Lowest coeff: %f\%', (_min(data.map(({ coeff }) => coeff.c)) * 100).toFixed(2))
+debug('Highest coeff: %f\%', (_max(data.map(({ coeff }) => coeff.c)) * 100).toFixed(2))
 debug('')
-debug('Total hours: %f', hours)
-debug('Total cost: %f', hours * avgCoeff * HOURLY)
+debug('Total hours: %f', hours.toFixed(2))
+debug('Total cost: $%f', _sum(data.map(({ cost }) => cost)).toFixed(2))
 debug('')
-debug('Shortest session: %fh', _min(data.map(({ lenHours }) => lenHours)))
-debug('Longest session: %fh', _max(data.map(({ lenHours }) => lenHours)))
-debug('Avg session length: %fh', _sum(data.map(({ lenHours }) => lenHours)) / data.length)
+debug('Shortest session: %fh', _min(data.map(({ lenHours }) => lenHours)).toFixed(4))
+debug('Longest session: %fh', _max(data.map(({ lenHours }) => lenHours)).toFixed(2))
+debug('Avg session length: %fh', (_sum(data.map(({ lenHours }) => lenHours)) / data.length).toFixed(2))
 debug('')
 debug('Topics:')
-
 _uniq(data.map(({ trueNote }) => trueNote)).forEach(note => (
   debug('  * %s', note)
 ))
